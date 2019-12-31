@@ -5,10 +5,12 @@ import (
 	"flag"
 	"github.com/ganeshrahul23/snippetbox/pkg/models/mysql"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/golangcollege/sessions"
 	"html/template"
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 type application struct {
@@ -16,11 +18,13 @@ type application struct {
 	infoLog       *log.Logger
 	snippets      *mysql.SnippetModel
 	templateCache map[string]*template.Template
+	session       *sessions.Session
 }
 
 func main() {
 	addr := flag.String("addr", ":8080", "HTTP Network Address")
 	dsn := flag.String("dsn", "web:ganesh23@/snippetbox?parseTime=true", "MySQL data source name")
+	secret := flag.String("secret", "s6Ndh+pPbnzHbS*+9Pk8qGWhTzbpa@ge", "Secret Key")
 	flag.Parse()
 
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
@@ -38,11 +42,15 @@ func main() {
 		errorLog.Fatal(err)
 	}
 
+	session := sessions.New([]byte(*secret))
+	session.Lifetime = 12 * time.Hour
+
 	app := &application{
 		errorLog:      errorLog,
 		infoLog:       infoLog,
 		snippets:      &mysql.SnippetModel{DB: db},
 		templateCache: templateCache,
+		session:       session,
 	}
 
 	srv := &http.Server{
@@ -53,7 +61,7 @@ func main() {
 
 	infoLog.Printf("Starting server on %s\n", *addr)
 	//err := http.ListenAndServe(*addr, mux)
-	err = srv.ListenAndServe()
+	err = srv.ListenAndServeTLS(".\\tls\\cert.pem", ".\\tls\\key.pem")
 	if err != nil {
 		errorLog.Fatal(err)
 	}
