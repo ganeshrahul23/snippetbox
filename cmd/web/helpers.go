@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"github.com/ganeshrahul23/snippetbox/pkg/models"
 	"github.com/justinas/nosurf"
 	"net/http"
 	"runtime/debug"
@@ -53,6 +54,10 @@ func (app *application) addDefaultData(data *templateData, r *http.Request) *tem
 	return data
 }
 
-func (app *application) authenticatedUser(r *http.Request) int {
-	return app.session.GetInt(r, "userID")
+func (app *application) authenticatedUser(r *http.Request) *models.User {
+	user, ok := r.Context().Value(contextKeyUser).(*models.User)
+	if !ok {
+		return nil
+	}
+	return user
 }
