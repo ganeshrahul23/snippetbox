@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"flag"
+	"github.com/ganeshrahul23/snippetbox/pkg/models"
 	"github.com/ganeshrahul23/snippetbox/pkg/models/mysql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/golangcollege/sessions"
@@ -14,13 +15,25 @@ import (
 	"time"
 )
 
+type snippetInterface interface {
+	Insert(string, string, string) (int, error)
+	Get(int) (*models.Snippet, error)
+	Latest() ([]*models.Snippet, error)
+}
+
+type userInterface interface {
+	Insert(string, string, string) error
+	Authenticate(string, string) (int, error)
+	Get(int) (*models.User, error)
+}
+
 type application struct {
 	errorLog      *log.Logger
 	infoLog       *log.Logger
-	snippets      *mysql.SnippetModel
+	snippets      snippetInterface
 	templateCache map[string]*template.Template
 	session       *sessions.Session
-	users         *mysql.UserModel
+	users         userInterface
 }
 
 type contextKey string
@@ -43,7 +56,7 @@ func main() {
 	defer db.Close()
 
 	// Initialize a new template cache...
-	templateCache, err := newTemplateCache("./ui/html/")
+	templateCache, err := newTemplateCache(".\\ui\\html\\")
 	if err != nil {
 		errorLog.Fatal(err)
 	}
